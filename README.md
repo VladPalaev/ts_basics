@@ -85,7 +85,7 @@
 	}
 ---
 
-### Создание типов для класса
+## Создание типов для класса
 
 	class User {
 		name: string
@@ -198,4 +198,182 @@ class User {
 	}
 }
 ```
+### Наследование
 
+Создание статических методов или свойств класса, достаточно добавить ключевое слово static. Причем каждый из эксепляров класса получить доступ к этому свойству.
+```
+class User {
+    static secret: string = 'secret user';
+
+    constructor(
+        public name: string,
+        public age?: number
+    ){}
+}
+```
+Не забывать вызывать метод super в конструкторе вызова, если мы что-то меняем
+```
+ class User {
+    static secret: string = 'my secret'
+    protected nickName: string = 'webDev'
+
+    constructor(
+        public name: string,
+        public age: number
+    ){}
+
+    getPass(): string {
+        return `${this.name} | ${User.secret}`
+    }
+ }
+
+class Vlad extends User {
+    name: string = 'vladislav'
+
+    constructor(age: number) {
+        super(name, age) // вызвали родительский конструктор
+    }
+}
+
+const test = new Vlad(45);
+```
+**Абстрактные классы** нужные для создание какой-то общий сущности, которую потом будут наследовать другие наследники и где потом каждый наследник сможет реализовать свои собственные свойства(методы) или заменить свойства родителя. Важное правило, что напрямую абстракные классы нельзя вызвать.
+```
+abstract class User {
+    constructor(
+        public name: string,
+        public age: number,
+    ){}
+
+    great(): void {
+        console.log(this.name);
+    }
+
+    abstract getPass(): string
+}
+
+class Vlad extends User {
+    public name: string = 'vladislav'
+
+    constructor(age: number) {
+        super(name, age);
+    }
+}
+```
+Тут будет небольшая ошибка, так как в абстрактном классе у метода getPass мы указали ключевое слово abstract, ЧТО ЗНАЧИТ обязательное правило реализации(описание) данного метода у потомка и она так же должна возврщает string , как было указано у родителя.
+Поэтому нужно добавить данную реализацию.
+```
+class Vlad extends User {
+	public name: string = 'vladislav'
+
+	constructor(age: number) {
+		super(name, age);
+	}
+
+	getPass(): string {
+		return this.name + this.age;
+	}
+}
+```
+### Namespaces
+Данный подход строиться на изолированности переменных. НО сам реакт и лругие инстременты, говорят , что лучше использовать import/export синтаксиса ES6
+### Interface
+```
+interface User {
+    name: string,
+    age: number,
+}
+
+type UserClone = {
+    name: string,
+    age: number
+}
+```
+На первый взгляд , что type, что interface как будто одно и то же. Но type по своей логике намного проще , чем сложная логика interface. Type лучше применять на примитивах и простых объектах, но если нам нужно расширять или наследовать типы, то для этой задачи есть Interface
+```
+interface User {
+	name: string,
+	age?: number // можем указывать опциональность некоторых свойств
+	readonly isAdmin: boolean // можем ставить модификатор только для чтения на свойство
+
+}
+
+const user: User = {
+	name: 'vlad',
+	city: 'lagan', // тут будет ошибка, так как у нас не задекларирован данный тип
+}
+```
+Бывает ситуация когда у нас может объект пополняться в разные моменты свойствами и чтобы избежать данную ошибку мы можем указать [propName: string]: any
+```
+interface User {
+	name: string,
+	[propName: string]: any // говорим компиляторы, что мы будем пополнять наш объект разными типами с строковым ключом
+}
+```
+Мы можем соединить наш interface с классами. с помощью ключевого слова implements. Причем если вдруг какой-то тип не прописан в interface, а в классе он есть, то это не беда
+```
+interface User {
+    name: string,
+    age: number,
+}
+class Vlad implements User {
+    name: string = 'vlad'
+    age: number = 45
+}
+```
+Так же можно расширять интерфейсы.
+```
+interface User {
+	name: string
+}
+interface Admin extends User {
+	isAdmin: boolean
+}
+
+class Admin implements Admin {}
+```
+### Generic
+---
+Бывают случаи когда мы не знаем какой тип аргумента будет прилетать в функцию. Мы могли сделать так.  
+```
+const getter = (data: any): any => data
+```
+Но есть проблемы в следующем
+```
+getter(10).length // тут ошибка, так как автоматом тип не подхватывается
+getter('vlad').length // тут все работает
+```
+С помощью джинерика мы можем сделать автоматический подхват возвращаемого типа. То есть мы объявляем джинерик <T> потом говорим в аргументе функции, то что принимаем джинерик (data: T) и возвращаем его же тип (data: T): T => data
+```
+function getter<T>(data: T): T {
+    return data
+}
+or
+const getter = <T>(data: T): T => data;
+```
+Создание джинериков у классов.
+```
+class User<T> {
+    constructor(public name: T, public age: T) {}
+
+    getPass(): string {
+        return `${this.name} ${this.age}`;
+    }
+}
+
+const test1 = new User('vlad', 45); // вот так не работает, потому что у нас указан один джинерик, значит имеется ввиду что два аргумента будут одного типа
+const test2 = new User('asya', 'is working it');
+```
+Чтобы создать джинерики разных типов, нужно просто указать что их два. Теперь мы можем передавать аргументом как разные типы, так и ОДИНАКОВЫЕ
+```
+class User<T, K> {
+    constructor(public name: T, public age: K) {}
+
+    getPass(): string {
+        return `${this.name} ${this.age}`;
+    }
+}
+
+const test1 = new User('vlad', 45); // вот так не работает, потому что у нас указан один джинерик, значит имеется ввиду что два аргумента будут одного типа
+const test2 = new User('asya', 'is working it');
+```
