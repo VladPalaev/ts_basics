@@ -1,0 +1,20 @@
+{
+  "name": "ts_webdev",
+  "version": "1.0.0",
+  "description": "+ boolean | `let isComplited: boolean = false`  \r + number | `let count: number = 0`  \r + string | `let firstName: string = ''`  \r + null | `let n: null = null`  \r + object | `const testFN = (o: object | string): void`\r + undefined | `let u: undefined - undefined`  \r + void | `const getUser = (): void {...body fn}` Note: void значит ничего не возвращает  \r ### Сложные типы(или как-то так)",
+  "main": "testJs.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VladPalaev/ts_basics.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VladPalaev/ts_basics/issues"
+  },
+  "homepage": "https://github.com/VladPalaev/ts_basics#readme"
+}

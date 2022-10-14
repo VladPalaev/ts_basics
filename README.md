@@ -454,6 +454,22 @@ const test = new User('vlad', 'sdf');
 
 Однако повторение одной и той же операции для нескольких функций может привести к повторению кода, поэтому для проверки аргументов лучше написать декоратор, который затем можно будет многократно использовать с любыми функциями.
 
+**Декораторы можно повестить на 4 типа**  
++ Класс
++ Свойство класса
++ Метод класса
++ Аксессор
+
+Стоит отметить что каждый из перечисленных декоратов для каждого типа принимает свои аргументы  
+
+__Для класса__ @decorator(constructor: Function) --> constructor возврщает сам класс.  
+__Для свойства__ @decorator(target: any, propName: string | Symbol) --> target - это текущий instance, а propName - свойство.
+__Для метода__ @decorator(target: any, propName: string | Symbol, descriptor :ProtertyDescriptor) --> descriptor возвращает всю инфу о методе(его дескрипторы) и саму функцию. Сама функция будет лежать в descriptor.value.
+__Для аксессоров__ Тут аналогично, как и для метода.
+```
+
+```
+
 
 ### Guards
 ---
@@ -520,11 +536,17 @@ type SecretDataUser = Pick<User, 'pass' | 'pin'> // забрали ключи pa
 
 const user: PublicDataUser = "email"
 ```
-
++ Readonly<Array<string>> / ReadonlyArray<string>(сокр. запись) / Readonly<НашИнтрефейс>
+> Полезная вещь когда у нас есть массив и мы хотим сделать его не изменным
++ as
+> Когда мы прописали типы и хотим создать пустой объект и не сразу его пополнить. На насильно создаем тип, при этом даже не соблюдая поля типа при заполнение.
++ is
+> При создание функций для проверки пользовательский типов, нужна при возвращение этой функци , если функция возвращает true;
+`const isUser = (obj: any): obj is IUser => obj.usertype !== undefined`
 ---
 ## Advance ts Минин
 ---
-+ 1  
++ 1
 
 Задача. Создать мердж функцию, которая принимает два объекта с произвольными свойства и возвращает новый мердж объект. Проблема в том, что при отработки функции, новая перменная с этим объектом автокомплит не видит свойства нового объекта.
 ```
@@ -560,7 +582,8 @@ const testMerge = <T extends object, K extends object>(a: T, b: K): T & K => {
     return Object.assign({}, a, b);
 }
 ```
-+ 2  
++ 2
+
 Задача. Написать функцию, которая будет возращать объект из value, count. В одном из свойств объекта будет применять метод length. Проблем с входными данными из string | array не составит, но что если передадут другой тип данных у которого нет свойства length. Я опять решил в лоб. Минус в том, что мне приходиться ручками прописывать типы внутри функции.
 ```
 function withCount(a: string | number[]): {value: string | number[], count: string} {
@@ -583,6 +606,286 @@ function withCount<T extends ILength>(value: T): {value: T, count: string} {
     }
 }
 ```
++ 3
+
+Задача. Есть функция аксессор, которая на вход получает объект, вторым аргументом его возможный ключ. Нужно сделать так, чтобы когда мы вызывали функцию, передавая второй аргумент, мы знали какие есть у него ключи, чтобы не было возможности передать какой-то ключ которого нет в этом объекте.
+```
+// Я решил это так, но тут есть ошибка. В плане того, что я могу принимать первым аргументом любой тип данных, поэтому нужно указать ограничения.
+
+function getObjectsKey<T>(obj: T, key: keyof T) {
+    return obj[key];
+}
+// Вот так верно
+
+function getObjectsKey2<T extends object, K extends keyof T>(obj: T, key: K) {
+    return obj[key];
+}
+```
++ 4
+
+Задача. Создать класс Коллекция, данный класс может хранить разные типы однообразных данных, кроме объектов. То есть внутри массива должны быть любо все, стороки, либо числа и тд.
+```
+// Вначале создаем тип ограничитель
+type PrimitiveType = number | string | boolean;
+
+// Благодаря джинерикам, они автоматом будут подставлять данные которые мы передадим перед созданием класса.
+
+class Collection<T extends PrimitiveType> {
+    constructor(
+        private _items: Array<T>
+    ){}
+
+    add(data: T) {
+        this._items.push(data);
+    }
+
+    remove(data: T): T[] {
+        return this._items = this._items.filter( (i) => i !== data)
+    }
+
+    get myItems(): T[] {
+        return this._items;
+    }
+}
+
+const test = new Collection<string>([]);
+```
++ 5
+
+Задача. Создать функцию, которая будет возвращать интерфейс, но при этом внутри функции мы создаем пустой объект, в которой потом будет пополнять валидированные данные.
+```
+// благодаря операторы as, можно создавать пустые объект, а потом пополнять свойствами
+
+interface ICar {
+    model: string,
+    year: number
+}
+
+function createCar(model: string, year: number): ICar {
+    const car = {} as ICar;
+    if (model.length > 3) car.model = model;
+    if (year > 2000) car.year = year;
+
+    return car; 
+}
+```
++ 6
+
+Задача. Создать массив чтобы его значения были не изменны.
+```
+const staticList: ReadonlyArray<string> = ['audi', 'bmw'];
+// Фишка в том, что теперь мы не можем ни добавлять, ни удалять элементы массива
+```
++ 7
+
+Задача. У нас есть готовый интерфейс, при создание нового объекта с этими поля из интерфейса, мы хотим, чтобы у нас не было возможности перезатирать значения. Это можно сделать с помощью джинерика
+```
+interface ICar {
+    model: string,
+    year: number
+}
+
+const ford: Readonly<ICar> = {
+    model: 'bmw',
+    year: 2011
+}
+```
++ 8
+
+Задача. Создать декоратор компонента для класса. Реализация похожа на декоратор из Angular @Component
+```
+interface IComponent {
+    selector: string,
+    template: string,
+}
+
+type IsClass = new(...args: any[]) => object; // тут определяем правило для определение класса, можно было сделать и через объект
+
+function Component(config: IComponent) {
+    return function<T extends IsClass>(Constructor: T) {
+        return class extends Constructor {
+            constructor(...arg: any[]) {
+                super(...arg);
+
+                const innerContainer: HTMLElement = document.getElementById(config.selector)!;
+                innerContainer.innerHTML = config.template;
+            }
+        }
+    }
+}
+
+@Component({
+    selector: '#root',
+    template: '<div>Hello world!</div>'
+})
+class CardComponent {
+    constructor(
+        public name: string,
+    ){}
+
+    logInfo() {
+        console.log(`This is components: ${this.name}`);
+    }
+}
+```
+Снала создаем интерфейс для декоратора, это нужно для того, чтобы понять какими данными нужно наполнять декоратор.  
+Декоратор это посути функция обертка, которая вызывается со своими данными и замыкает их в себе, и возвращает класс, который потом в ходе  программы создаст новый инстанс с доступом к области видимости декоратора.  
+Так как это обертка, ей нужно передать данные , которые как раз мы замкнем. Эта обертка должна вернуть функцию с определенными параметрами(зависит от декоратора класса/свойства/метода). Так как в эту функцию мы передали метод constructor - что есть по факту объект нашего класса, мы должны достать его. По факту получается, что наша функция декторатора возвращает анонимный класс, который extend-ит класс Constructor. При этом стоит не забыть вызвать метод инициализации constructor(){}, где будет вызван родительский constructor с помощью метода super(). При все этом не забывая передовать аргументы для родительского метода super. Это можно сделать путем сбора в рест параметр всех аргументов и потом передать это массив предварительно распарсив его. Ну и так же мы можем делать нашу логику внутри constructora анонимного класса.
+
++ 9
+
+Задача. Есть некий класс, у него есть классный метод, но для работы использует контекст this. Мы хотим чтобы контекст автоматом менялся на тот, в которым вызывается. Создать декоратор bind.
+```
+function Bind(_: any, _2: any, descriptor: PropertyDescriptor): PropertyDescriptor {
+    const originFn = descriptor.value;
+    return {
+        enumerable: false,
+        writable: true,
+        get() {
+            return originFn.bind(this);
+        }
+    }
+}
+class CardComponent {
+    constructor(
+        public name: string,
+    ){}
+
+    @Bind
+    logInfo() {
+        console.log(`This is components: ${this.name}`);
+    }
+}
+
+const myComponent = new CardComponent('my Components');
+const btn: HTMLElement = document.querySelector('.btn')!;
+btn.addEventListener('click', myComponent.logInfo);
+```
+Мы вешаем декоратор на метод, не вызывая его, то есть декоратор будет выполняться только в моммент вызова данного метода. Так как мы работаем с мотодом класса, но обязательно 3 парметром берем аргумент descriptor: PropertyDescriptor. Он нужен для того, чтобы из него вытащить value, то есть его непосредственно функцию. На декоратор вешаем возврат PropertyDescription. Получается мы берем его value, что-то с ним делаем и возврщаем его не много модифицированным. Внутри функции возвращаем объект {} со свойствами PropertyDescription. Обязательно у объекта реализуем метод get() , так как в прямом смысле говорим, если кто-то вызовет тебя по твоему имени верни то, что указано в методе get.
+
++ 10
+
+Задача. Представьте, что есть объект Frame, который содержит список элементов Component. С помощью интерфейса Iterator вы можете получить каждый Component из этого объекта Frame, как показано ниже:
+
+```
+interface IteratorResult1<T> {
+    done: boolean;
+    value: T
+}
+interface Iterator1<T> {
+    next: (value?: any) => IteratorResult1<T>;
+    return?: (value?: any) => IteratorResult1<T>;
+    throw?: (value?: any) => IteratorResult1<T>;
+}
+
+class Component {
+    constructor(
+        public name: string,
+    ){}
+}
+
+class Frame implements Iterator1<Component> {
+    private point: number = 0;
+
+    constructor(
+        public name: string,
+        public components: Array<Component>
+        ){}
+    
+    next(): IteratorResult1<Component> {
+        if ( this.point < this.components.length ) {
+            return {value: this.components[this.point++], done: false}
+        }
+        return {done: true, value: null!} 
+    }
+}
+
+const test = new Frame('test1', [new Component('one Component'), new Component('two Component')]);
+
+console.log(test.next())
+console.log(test.next())
+console.log(test.next())
+```
+Есть джинерики из коробки Iterator<T> и IteratorResult<T>.  
+У этого решение есть минус, он является итерируемым объектом. Вот решение
+```
+class Frame implements Iterator1<Component>{
+    private pointer = 0;
+
+    constructor(
+        public name: string,
+        public components: Array<Component>
+    ){}
+    [Symbol.iterator]() {
+        return this;
+    }
+
+    next(): IteratorResult1<Component> {
+        if (this.pointer < this.components.length) {
+            return {
+                done: false, 
+                value: this.components[this.pointer++]
+            }
+        }
+        this.pointer = 0; // Не забыть обнулить счетчик
+        return {
+            done: true,
+            value: null!
+        }
+    }
+}
+
+const test = new Frame('my Frame', [new Component('one'), new Component('two'), new Component('tree')]);
+console.log(test.next())
+
+for (let item of test) {
+    console.log(item)
+}
+
+for (let item of test) {
+    console.log(item)
+}
+```
++ 11
+
+Задача. У нас есть пользовательский тип или интерфейс, у нас есть общая функция, которая может принимать два разных интерфейса, но мы должны проверить внутри функции с каким мы работаем типом именно.
+```
+interface Foo {
+    foo: number;
+    common: string;
+}
+
+interface Bar {
+    bar: number;
+    common: string;
+}
+
+function isFoo(obj: any): obj is Foo {
+    return obj.foo !== undefined;
+}
+
+function createTest(obj: Foo | Bar) {
+    if (isFoo(obj)) {
+        return obj.foo;
+    }
+    return obj.bar;
+}
+```
++ 12
+
+Задача. Создать свой тип , который есть в реакте FunctionalComponent
+```
+type FunctionComponent<T extends object = object> = (props: T & {children?: any}) => any;
+
+interface IUser {
+    name: string;
+    age: number;
+}
+
+const App: FunctionComponent<IUser> = (props) => {
+    console.log(props.name)
+}
+```
 
 
 
@@ -591,4 +894,10 @@ function withCount<T extends ILength>(value: T): {value: T, count: string} {
 
 
 
-TODO: не понял про enum и перезагрузка функций
+
+
+
+
+
+
+TODO: не понял про enum и перезагрузка функций, досмотреть у минина курс для продвитуных, остановился на декораторе bind
